@@ -47,11 +47,11 @@ local function get_ast_nodes_reverse()
 	end
 	-- Create Leap targets from TS nodes.
 	local targets = {}
-	local startline, startcol
+	local startline, startcol, endline, endcol
 	for _, node in ipairs(nodes) do
-		startline, startcol, _, _ = node:range() -- (0,0)
-		if startline + 1 >= wininfo.topline then
-			local target = { node = node, pos = { startline + 1, startcol + 1 } }
+		_, _, endline, endcol = node:range() -- (0,0)
+		if endline - 1 <= wininfo.botline then
+			local target = { node = node, pos = { endline - 1, endcol - 1 } }
 			table.insert(targets, target)
 		end
 	end
@@ -76,12 +76,16 @@ end
 local function leap(opts)
 	opts = opts or {}
 	local params = {
-		targets = get_ast_nodes(),
 		action = api.nvim_get_mode().mode ~= "n" and select_range, -- or jump
 		backward = true,
 	}
-  params = vim.tbl_deep_extend("force", params, opts)
-	require('leap').leap(params)
+	if not params.backward then
+		params.targets = get_ast_nodes_reverse()
+	else
+		params.targets = get_ast_nodes()
+	end
+	params = vim.tbl_deep_extend("force", params, opts)
+	require("leap").leap(params)
 end
 
 return { leap = leap }
